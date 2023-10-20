@@ -4,112 +4,115 @@ import 'package:database/database.dart';
 import 'package:database/filter.dart';
 
 main() async {
-  var tietokanta = MemoryDatabaseAdapter().database();
-  var elokuvat = tietokanta.collection('elokuvat');
-  await elokuvat.insert(data: {
-    'nimi': 'Tron',
-    'katsottu': false
+
+  // test commands for the demo
+  
+  var database = MemoryDatabaseAdapter().database();
+  var movies = database.collection('movies');
+  await movies.insert(data: {
+    'name': 'Tron',
+    'watched': false
   });
-  await elokuvat.insert(data: {
-    'nimi': 'Hackers',
-    'katsottu': true
+  await movies.insert(data: {
+    'name': 'Hackers',
+    'watched': true
   });
-  await elokuvat.insert(data: {
-    'nimi': 'The Matrix',
-    'katsottu': true
+  await movies.insert(data: {
+    'name': 'The Matrix',
+    'watched': true
   });
   
-  poistaKatsotut(elokuvat);
-  listaa(elokuvat);
+  removeWatched(movies);
+  list(movies);
 }
 
-kaynnista(kokoelma) async {
+start(collection) async {
   while(true) {
-    print('Komennot:');
-    print('1: Lisää elokuva');
-    print('2: Katso elokuva');
-    print('3: Listaa elokuvat');
-    print('4: Poista katsotut');
-    print('5: Lopeta');
-    var komento = stdin.readLineSync();
-    if (komento == '5') {
+    print('Commands:');
+    print('1: Add Movie');
+    print('2: Watch Movie');
+    print('3: List Movi9es');
+    print('4: Remove Watched');
+    print('5: End');
+    var command = stdin.readLineSync();
+    if (command == '5') {
       break;
     }
 
-    if (komento == '1') {
-      await lisaa(kokoelma);
-    } else if (komento == '2') {
-      await katso(kokoelma);
-    } else if (komento == '3') {
-      await listaa(kokoelma);
-    } else if (komento == '4') {
-      await poistaKatsotut(kokoelma); 
+    if (command == '1') {
+      await add(collection);
+    } else if (command == '2') {
+      await watch(collection);
+    } else if (command == '3') {
+      await list(collection);
+    } else if (command == '4') {
+      await removeWatched(collection); 
     }
   }
 }
 
-lisaa(kokoelma) async {
-  print('Elokuvan nimi?');
-  var nimi = stdin.readLineSync();
-  await kokoelma.insert(data: {
-    'nimi': nimi,
-    'katsottu': false
+add(collection) async {
+  print('Name of Movie?');
+  var name = stdin.readLineSync();
+  await collection.insert(data: {
+    'name': name,
+    'watched': false
   });
 }
 
-katso(kokoelma) async {
-  print('Elokuvan nimi?');
-  var nimi = stdin.readLineSync();
+watch(collection) async {
+  print('Name of Movie?');
+  var name = stdin.readLineSync();
 
-  var kysely = Query(
+  var query = Query(
     filter: MapFilter({
-      'nimi': ValueFilter(nimi)
+      'name': ValueFilter(name)
     })
   );
 
-  var tulos = await kokoelma.search(query: kysely);
-  var dokumentit = tulos.snapshots;
+  var result = await collection.search(query: query);
+  var documents = result.snapshots;
 
-  for (var i = 0; i < dokumentit.length; i++) {
-    var data = dokumentit[i].data;
-    var dokumentti = dokumentit[i].document;
-    await dokumentti.update(data: {
-      'nimi': data['nimi'],
-      'katsottu': true
+  for (var i = 0; i < documents.length; i++) {
+    var data = documents[i].data;
+    var document = documents[i].document;
+    await document.update(data: {
+      'name': data['name'],
+      'watched': true
     });
   }
 }
 
-listaa(kokoelma) async {
-  var kysely = Query(
-    sorter: PropertySorter('nimi', isDescending: false)
+list(collection) async {
+  var query = Query(
+    sorter: PropertySorter('name', isDescending: false)
   );
 
-  var tulos = await kokoelma.search(query: kysely);
-  var dokumentit = tulos.snapshots;
+  var result = await collection.search(query: query);
+  var documents = result.snapshots;
 
-  for (var i = 0; i < dokumentit.length; i++) {
-    var data = dokumentit[i].data;
-    if (data['katsottu'] = true) {
-      print("[X] ${data['nimi']}");
+  for (var i = 0; i < documents.length; i++) {
+    var data = documents[i].data;
+    if (data['watched'] = true) {
+      print("[X] ${data['name']}");
     } else {
-      print("[ ] ${data['nimi']}");
+      print("[ ] ${data['name']}");
     }
   }
 }
 
-poistaKatsotut(kokoelma) async {
-  var kysely = Query(
+removeWatched(collection) async {
+  var query = Query(
     filter: MapFilter({
-      'katsottu': ValueFilter(true)
+      'watched': ValueFilter(true)
         })
     );
   
-  var tulos = await kokoelma.search(query: kysely);
-  var dokumentit = tulos.snapshots;
+  var result = await collection.search(query: query);
+  var documents = result.snapshots;
   
-  for (var i = 0; i < dokumentit.length; i++) {
-    var dokumentti = dokumentit[i].document;
-    await dokumentti.delete();
+  for (var i = 0; i < documents.length; i++) {
+    var document = documents[i].document;
+    await document.delete();
   }
 }
